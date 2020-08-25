@@ -56,6 +56,7 @@ def train(model: DeepMoD,
 
         # Write progress to command line and tensorboard
         if iteration % write_iterations == 0:
+            _ = model.sparse_estimator(thetas, time_derivs) # calculating l1 adjusted coeffs but not setting mask
             progress(iteration, start_time, max_iterations, loss.item(),
                      torch.sum(MSE).item(), torch.sum(Reg).item(), torch.sum(l1_norm).item())
 
