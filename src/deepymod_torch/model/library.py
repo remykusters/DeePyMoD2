@@ -59,11 +59,11 @@ class Library1D(Library):
     Args:
         Library ([type]): [description]
     """
-    def __init__(self, poly_order: int, diff_order: int) -> None:
-        super().__init__()
+    def __init__(self, poly_order: int, diff_order: int, scaled: bool=False) -> None:
+        super().__init__(scaled=scaled)
         self.poly_order = poly_order
         self.diff_order = diff_order
-
+        
     def library(self, input: Tuple[torch.Tensor, torch.Tensor]) -> Tuple[TensorList, TensorList]:
         """[summary]
 

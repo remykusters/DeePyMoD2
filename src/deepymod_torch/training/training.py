@@ -212,14 +212,8 @@ def train_auto_split_scaled(model: DeepMoD,
         prediction, time_derivs, thetas = model(data_train)
 
         MSE = torch.mean((prediction - target_train)**2, dim=0)  # loss per output
-        
-        theta_norms = [torch.norm(theta, dim=0) for theta in thetas]
-        time_deriv_norms = [torch.norm(dt, dim=0) for dt in time_derivs]
-        normed_thetas = [theta / norm for theta, norm in zip(thetas, theta_norms)]
-        normed_time_derivs = [dt / norm for dt, norm in zip(time_derivs, time_deriv_norms)]
-
         Reg = torch.stack([torch.mean((dt - theta @ coeff_vector)**2)
-                           for dt, theta, coeff_vector in zip(normed_time_derivs, normed_thetas, model.constraint_coeffs(scaled=True, sparse=True))])
+                           for dt, theta, coeff_vector in zip(time_derivs, thetas, model.constraint_coeffs(scaled=True, sparse=True))])
         loss = torch.sum(MSE + Reg)  # 1e-5 for numerical stability
 
         # Optimizer step
@@ -237,7 +231,7 @@ def train_auto_split_scaled(model: DeepMoD,
         time_derivs_test, thetas_test = model.library((prediction_test, coordinates))
         MSE_test = torch.mean((prediction_test - target_test)**2, dim=0)  # loss per output
         Reg_test = torch.stack([torch.mean((dt - theta @ coeff_vector)**2)
-                           for dt, theta, coeff_vector in zip(time_derivs_test, thetas_test, model.constraint_coeffs(scaled=False, sparse=True))])
+                           for dt, theta, coeff_vector in zip(time_derivs_test, thetas_test, model.constraint_coeffs(scaled=True, sparse=True))])
         loss_test = torch.sum(MSE_test + Reg_test) 
 
         # Write progress to command line and tensorboard

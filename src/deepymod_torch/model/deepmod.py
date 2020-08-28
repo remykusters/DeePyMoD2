@@ -97,9 +97,10 @@ class Library(nn.Module):
     Args:
         nn ([type]): [description]
     """
-    def __init__(self) -> None:
+    def __init__(self, scaled) -> None:
         super().__init__()  
         self.norms = None
+        self.scaled = scaled
 
     def forward(self, input: Tuple[TensorList, TensorList]) -> Tuple[TensorList, TensorList]:
         """[summary]
@@ -111,8 +112,18 @@ class Library(nn.Module):
             Tuple[TensorList, TensorList]: [description]
         """
         time_derivs, thetas = self.library(input)
-        self.norms = [(torch.norm(time_deriv) / torch.norm(theta, dim=0, keepdim=True)).detach().squeeze() for time_deriv, theta in zip(time_derivs, thetas)]
-        return time_derivs, thetas
+        if self.scaled:
+            theta_norms = [torch.norm(theta, dim=0) for theta in thetas]
+            time_deriv_norms = [torch.norm(dt, dim=0) for dt in time_derivs]
+
+            normed_thetas = [theta / norm for theta, norm in zip(thetas, theta_norms)]
+            normed_time_derivs = [dt / norm for dt, norm in zip(time_derivs, time_deriv_norms)]
+            self.norms = [theta_norm / dt_norm for theta_norm, dt_norm in zip(theta_norms, time_deriv_norms)]# we invert norms here because we pass the scaled one
+
+            return normed_time_derivs, normed_thetas
+        else:
+            self.norms = [(torch.norm(time_deriv) / torch.norm(theta, dim=0, keepdim=True)).detach().squeeze() for time_deriv, theta in zip(time_derivs, thetas)]
+            return time_derivs, thetas
 
     @abstractmethod
     def library(self, input: Tuple[torch.Tensor, torch.Tensor]) -> Tuple[TensorList, TensorList]: pass
@@ -159,7 +170,7 @@ class DeepMoD(nn.Module):
 
     def constraint_coeffs(self, scaled=False, sparse=False):
         coeff_vectors = self.constraint.coeff_vectors
-        if scaled:
+        if (scaled and (self.library.scaled is False)) or ((not scaled) and (self.library.scaled is True)):
             coeff_vectors = [coeff / norm[mask][:, None] for coeff, norm, mask in zip(coeff_vectors, self.library.norms, self.sparsity_masks)]
         if sparse:
             coeff_vectors = [torch.zeros((mask.shape[0], 1)).to(coeff_vector.device).masked_scatter_(mask[:, None], coeff_vector)
