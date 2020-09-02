@@ -85,3 +85,52 @@ class TrainTest:
         self.best_score = None
         self.apply_sparsity = False
         self.val_loss_min = np.Inf
+
+class TrainTestPeriodic:
+    """Early stops the training if validation loss doesn't improve after a given patience."""
+    def __init__(self, periodicity=50, patience=7, path='checkpoint.pt'):
+        self.patience = patience
+        self.counter = 0
+        self.best_score = None
+        self.apply_sparsity = False
+        self.val_loss_min = np.Inf
+        self.path = path
+        self.initial_epoch = None
+        self.periodicity = periodicity
+
+    def __call__(self, iteration, val_loss, model, optimizer):
+        score = -val_loss
+        if self.initial_epoch is not None:
+            if (iteration - self.initial_epoch) % self.periodicity == 0:
+                self.apply_sparsity = True 
+        elif self.best_score is None:
+            self.best_score = score
+            self.save_checkpoint(model, optimizer)
+        elif score < self.best_score:
+            self.counter += 1
+            #self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            if self.counter >= self.patience:
+                self.apply_sparsity = True
+                self.initial_epoch = iteration
+                checkpoint = torch.load(self.path)
+                model.load_state_dict(checkpoint['model_state_dict'])
+                optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+        else:
+            self.best_score = score
+            self.save_checkpoint(model, optimizer)
+            self.counter = 0
+
+    def save_checkpoint(self, model, optimizer):
+        '''Saves model when validation loss decrease.'''
+        torch.save(model.state_dict(), self.path)
+        torch.save({'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict(),}, self.path)
+
+    def reset(self) -> None:
+        """[summary]
+        """
+      
+        self.counter = 0
+        self.best_score = None
+        self.apply_sparsity = False
+        self.val_loss_min = np.Inf
