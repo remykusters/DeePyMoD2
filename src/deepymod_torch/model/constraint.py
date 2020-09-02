@@ -30,3 +30,11 @@ class LeastSquares(Constraint):
             Q, R = torch.qr(theta)  # solution of lst. sq. by QR decomp.
             opt_coeff.append(torch.inverse(R) @ Q.T @ dt)
         return opt_coeff
+
+class GradParams(Constraint):
+    def __init__(self, n_params, n_eqs) -> None:
+        super().__init__()
+        self.coeff_vectors = torch.nn.ParameterList([torch.nn.Parameter(torch.rand(n_params, 1)) for _ in torch.arange(n_eqs)])
+
+    def calculate_coeffs(self, sparse_thetas, time_derivs):
+        return self.coeff_vectors

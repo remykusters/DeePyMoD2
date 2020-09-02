@@ -160,11 +160,12 @@ class DeepMoD(nn.Module):
     def constraint_coeffs(self, scaled=False, sparse=False):
         coeff_vectors = self.constraint.coeff_vectors
         if scaled:
-            coeff_vectors = [coeff / norm[mask][:, None] for coeff, norm, mask in zip(coeff_vectors, self.library.norms, self.sparsity_masks)]
+            coeff_vectors = [coeff / norm[:, None] for coeff, norm, mask in zip(coeff_vectors, self.library.norms, self.sparsity_masks)]
         if sparse:
-            coeff_vectors = [torch.zeros((mask.shape[0], 1)).to(coeff_vector.device).masked_scatter_(mask[:, None], coeff_vector)
-                             for mask, coeff_vector
-                             in zip(self.sparsity_masks, coeff_vectors)]
+            coeff_vectors = [sparsity_mask[:, None] * coeff for sparsity_mask, coeff in zip(self.sparsity_masks, coeff_vectors)]
+            #coeff_vectors = [torch.zeros((mask.shape[0], 1)).to(coeff_vector.device).masked_scatter_(mask[:, None], coeff_vector)
+            #                 for mask, coeff_vector
+            #                 in zip(self.sparsity_masks, coeff_vectors)]
         return coeff_vectors
 
 

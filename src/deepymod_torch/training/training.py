@@ -341,6 +341,7 @@ def train_auto_split_MSE(model: DeepMoD,
             break
     board.close()
 
+
 def train_auto_split_test(model: DeepMoD,
           data: torch.Tensor,
           target: torch.Tensor,
@@ -380,7 +381,7 @@ def train_auto_split_test(model: DeepMoD,
 
         MSE = torch.mean((prediction - target_train)**2, dim=0)  # loss per output
         Reg = torch.stack([torch.mean((dt - theta @ coeff_vector)**2)
-                           for dt, theta, coeff_vector in zip(time_derivs, thetas, model.constraint_coeffs(scaled=False, sparse=False))])
+                           for dt, theta, coeff_vector in zip(time_derivs, thetas, model.constraint_coeffs(scaled=False, sparse=True))])
         loss = torch.sum(MSE + Reg)  # 1e-5 for numerical stability
 
         # Optimizer step
@@ -390,7 +391,7 @@ def train_auto_split_test(model: DeepMoD,
 
         # ====================== Logging =======================
         # We calculate the normalization factor and the l1_norm
-        l1_norm = torch.sum(torch.abs(torch.cat(model.constraint_coeffs(sparse=False, scaled=True), dim=1)), dim=0)
+        l1_norm = torch.sum(torch.abs(torch.cat(model.constraint_coeffs(sparse=True, scaled=True), dim=1)), dim=0)
         
         # Validation loss
         with torch.no_grad():
@@ -403,19 +404,19 @@ def train_auto_split_test(model: DeepMoD,
 
             progress(iteration, start_time, max_iterations, loss.item(),
                      torch.sum(MSE).item(), torch.sum(Reg).item(), torch.sum(l1_norm).item())
-            board.write(iteration, loss, MSE, Reg, l1_norm, model.constraint_coeffs(sparse=False, scaled=True), model.constraint_coeffs(sparse=False, scaled=False), estimator_coeff_vectors, MSE_test=MSE_test)
+            board.write(iteration, loss, MSE, Reg, l1_norm, model.constraint_coeffs(sparse=True, scaled=True), model.constraint_coeffs(sparse=True, scaled=False), estimator_coeff_vectors, MSE_test=MSE_test)
             
         # ================== Validation and sparsity =============
         # Updating sparsity and or convergence
-        sparsity_scheduler(iteration, torch.sum(MSE_test), model, optimizer)
+        sparsity_scheduler(iteration, l1_norm)
         #sparsity_scheduler(torch.sum(MSE_test), model, optimizer)
         if sparsity_scheduler.apply_sparsity is True:
             with torch.no_grad():
                 model.constraint.sparsity_masks = model.sparse_estimator(thetas, time_derivs)
                 sparsity_scheduler.reset()
-                print(model.sparsity_masks)
+                #print(model.sparsity_masks)
                 # Once sparsity has been applied, we use the whole set.
-                data_train, target_train = data, target
+                # data_train, target_train = data, target
 
         # Checking convergence
         convergence(iteration, torch.sum(l1_norm))
