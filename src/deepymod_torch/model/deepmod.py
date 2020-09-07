@@ -77,8 +77,8 @@ class Estimator(nn.Module,  metaclass=ABCMeta):
         
         # we first normalize theta and the time deriv
         with torch.no_grad():
-            normed_time_derivs = [(time_deriv / torch.norm(time_deriv)).detach().cpu() for time_deriv in time_derivs]
-            normed_thetas = [(theta / torch.norm(theta, dim=0, keepdim=True)).detach().cpu() for theta in thetas]
+            normed_time_derivs = [(time_deriv / torch.norm(time_deriv)).detach().cpu().numpy() for time_deriv in time_derivs]
+            normed_thetas = [(theta / torch.norm(theta, dim=0, keepdim=True)).detach().cpu().numpy() for theta in thetas]
         
         self.coeff_vectors = [self.fit(theta, time_deriv.squeeze())[:, None]
                               for theta, time_deriv in zip(normed_thetas, normed_time_derivs)]

@@ -1,0 +1,52 @@
+# General imports
+import numpy as np
+import torch
+
+# DeepMoD stuff
+from deepymod_torch import DeepMoD
+from deepymod_torch.model.func_approx import NN
+from deepymod_torch.model.library import Library1D
+from deepymod_torch.model.constraint import LeastSquares
+from deepymod_torch.model.sparse_estimators import Clustering, Threshold, PDEFIND
+from deepymod_torch.training import train_split_full
+from deepymod_torch.training.sparsity_scheduler import Periodic, TrainTestPeriodic
+
+from phimal_utilities.data import Dataset
+from phimal_utilities.data.burgers import BurgersDelta
+
+if torch.cuda.is_available():
+    device ='cuda'
+else:
+    device = 'cpu'
+
+# Settings for reproducibility
+np.random.seed(42)
+torch.manual_seed(0)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
+# Making dataset
+v = 0.1
+A = 1.0
+
+x = np.linspace(-3, 4, 100)
+t = np.linspace(0.5, 5.0, 50)
+x_grid, t_grid = np.meshgrid(x, t, indexing='ij')
+dataset = Dataset(BurgersDelta, v=v, A=A)
+X, y = dataset.create_dataset(x_grid.reshape(-1, 1), t_grid.reshape(-1, 1), n_samples=1000, noise=0.6, random=True, normalize=False)
+X, y = X.to(device), y.to(device)
+        
+
+network = NN(2, [30, 30, 30, 30, 30], 1)
+library = Library1D(poly_order=2, diff_order=3) # Library function
+estimator = PDEFIND(lam=1e-4) # Sparse estimator 
+constraint = LeastSquares() # How to constrain
+model = DeepMoD(network, library, estimator, constraint).to(device) # Putting it all in the model
+
+sparsity_scheduler = TrainTestPeriodic(periodicity=50, patience=8, delta=1e-5) # in terms of write iterations
+optimizer = torch.optim.Adam(model.parameters(), betas=(0.99, 0.999), amsgrad=True, lr=2e-3) # Defining optimizer
+
+train_split_full(model, X, y, optimizer, sparsity_scheduler, split=0.8, test='full', log_dir=f'single_0.6/', write_iterations=25, max_iterations=20000, delta=0.001, patience=20) 
+
+torch.save(model.state_dict(), 'single_0.6/trained_model.pt')
+print(model.sparsity_masks)

@@ -88,7 +88,7 @@ class TrainTest:
 
 class TrainTestPeriodic:
     """Early stops the training if validation loss doesn't improve after a given patience."""
-    def __init__(self, periodicity=50, patience=7, path='checkpoint.pt'):
+    def __init__(self, periodicity=50, patience=7, delta=0.00, path='checkpoint.pt'):
         self.patience = patience
         self.counter = 0
         self.best_score = None
@@ -97,18 +97,19 @@ class TrainTestPeriodic:
         self.path = path
         self.initial_epoch = None
         self.periodicity = periodicity
+        self.delta = delta
 
     def __call__(self, iteration, val_loss, model, optimizer):
         score = -val_loss
         if self.initial_epoch is not None:
             if (iteration - self.initial_epoch) % self.periodicity == 0:
                 self.apply_sparsity = True 
+    
         elif self.best_score is None:
             self.best_score = score
             self.save_checkpoint(model, optimizer)
-        elif score < self.best_score:
+        elif score < self.best_score + self.delta:
             self.counter += 1
-            #self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.apply_sparsity = True
                 self.initial_epoch = iteration
