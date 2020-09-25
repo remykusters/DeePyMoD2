@@ -102,7 +102,7 @@ class Library1D(Library):
                                     for du, dv in combinations(deriv_list, 2)], 1)
             theta = torch.cat([theta_uv, theta_dudv], dim=1)
 
-        return time_deriv_list, [theta]
+        return time_deriv_list, [theta for _ in np.arange(prediction.shape[1])]
 
 
 class Library2D(Library):
