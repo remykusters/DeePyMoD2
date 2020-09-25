@@ -1,4 +1,4 @@
-site_name: DeePyMoD
+site_name: DeePyMoD2
 nav:
     - Home: index.md
     - Background:
@@ -11,7 +11,9 @@ nav:
             - Libraries: api/lib.md
             - Constraints: api/const.md
             - Sparsity: api/sparse.md
-        - Training: api/training.md
+        - Training: 
+            - Training: api/training.md
+            - Convergence: api/convergence.md
         - Phimal-Utilities: api/utils.md
     - Examples: 
         - Burgers: examples/Burgers/PDE_Burgers.md
