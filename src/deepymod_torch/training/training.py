@@ -20,32 +20,19 @@ def train(model: DeepMoD,
           max_iterations: int = 10000,
           write_iterations: int = 25,
           **convergence_kwargs) -> None:
+    """Trains the DeepMoD model. This function automatically splits the data set in a train and test set. 
 
-    """
-    Trains the DeepMoD model. This function automatically splits the data set in a train and test set. 
-
-    Parameters
-    ----------
-    model : DeepMoD
-        A DeepMoD object.
-    data : torch.Tensor
-        Tensor of shape (n_samples x (n_spatial + 1)) containing the coordinates, first column should be the time coordinate.
-    target : torch.Tensor
-        Tensor of shape (n_samples x n_features) containing the target data.
-    optimizer :
-        Pytorch optimizer.
-    sparsity_scheduler :
-        Decides when to update the sparsity mask
-    test : str, optional
-        Sets what to use for the test loss, by default 'mse'
-    split : float, optional
-        Fraction of the train set, by default 0.8.
-    log_dir : Optional[str], optional
-        Directory where tensorboard file is written, by default None
-    max_iterations : int, optional
-        Max number of epochs , by default 10000
-    write_iterations : int, optional
-        Sets how often data is written to tensorboard and checks train loss , by default 25
+    Args:
+        model (DeepMoD):  A DeepMoD object.
+        data (torch.Tensor):  Tensor of shape (n_samples x (n_spatial + 1)) containing the coordinates, first column should be the time coordinate.
+        target (torch.Tensor): Tensor of shape (n_samples x n_features) containing the target data.
+        optimizer ([type]):  Pytorch optimizer.
+        sparsity_scheduler ([type]):  Decides when to update the sparsity mask.
+        test (str, optional): Sets what to use for the test loss, by default 'mse'
+        split (float, optional):  Fraction of the train set, by default 0.8.
+        log_dir (Optional[str], optional): Directory where tensorboard file is written, by default None.
+        max_iterations (int, optional): [description]. Max number of epochs , by default 10000.
+        write_iterations (int, optional): [description]. Sets how often data is written to tensorboard and checks train loss , by default 25.
     """
     start_time = time.time()
     board = Tensorboard(log_dir)  # initializing tb board
